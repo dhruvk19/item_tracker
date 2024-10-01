@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Receipt Splitter</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        #loginSection, #itemInput, #itemList, #userTotals {
+            margin-bottom: 20px;
+        }
+        button {
+            margin: 5px;
+            padding: 5px 10px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+        th {
+            background-color: #f2f2f2;
+        }
+    </style>
+</head>
+<body>
+    <h1>Receipt Splitter</h1>
+    
+    <div id="loginSection">
+        <input type="text" id="nameInput" placeholder="Enter your name">
+        <button onclick="login()">Login</button>
+    </div>
+
+    <div id="itemInput" style="display: none;">
+        <input type="text" id="itemName" placeholder="Item name">
+        <input type="number" id="itemPrice" placeholder="Price">
+        <button onclick="addItem()">Add Item</button>
+    </div>
+
+    <div id="itemList">
+        <h2>Items</h2>
+        <table id="itemsTable">
+            <thead>
+                <tr>
+                    <th>Item</th>
+                    <th>Price</th>
+                    <th>Contributors</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody></tbody>
+        </table>
+    </div>
+
+    <div id="userTotals">
+        <h2>User Totals</h2>
+        <table id="totalsTable">
+            <thead>
+                <tr>
+                    <th>Name</th>
+                    <th>Total Owed</th>
+                </tr>
+            </thead>
+            <tbody></tbody>
+        </table>
+    </div>
+
+    <script>
+        let currentUser = '';
+        let items = [];
+        let users = {};
+
+        function login() {
+            const name = document.getElementById('nameInput').value.trim();
+            if (name) {
+                currentUser = name;
+                document.getElementById('loginSection').style.display = 'none';
+                document.getElementById('itemInput').style.display = 'block';
+                if (!users[name]) {
+                    users[name] = 0;
+                }
+                updateTotals();
+            }
+        }
+
+        function addItem() {
+            const name = document.getElementById('itemName').value.trim();
+            const price = parseFloat(document.getElementById('itemPrice').value);
+            if (name && !isNaN(price)) {
+                items.push({ name, price, contributors: [] });
+                document.getElementById('itemName').value = '';
+                document.getElementById('itemPrice').value = '';
+                updateItemList();
+            }
+        }
+
+        function toggleContribution(index) {
+            const item = items[index];
+            const userIndex = item.contributors.indexOf(currentUser);
+            if (userIndex === -1) {
+                item.contributors.push(currentUser);
+            } else {
+                item.contributors.splice(userIndex, 1);
+            }
+            updateItemList();
+            updateTotals();
+        }
+
+        function updateItemList() {
+            const tbody = document.querySelector('#itemsTable tbody');
+            tbody.innerHTML = '';
+            items.forEach((item, index) => {
+                const row = tbody.insertRow();
+                row.insertCell(0).textContent = item.name;
+                row.insertCell(1).textContent = `$${item.price.toFixed(2)}`;
+                row.insertCell(2).textContent = item.contributors.join(', ');
+                const actionCell = row.insertCell(3);
+                const button = document.createElement('button');
+                button.textContent = item.contributors.includes(currentUser) ? 'Remove Me' : 'Add Me';
+                button.onclick = () => toggleContribution(index);
+                actionCell.appendChild(button);
+            });
+        }
+
+        function updateTotals() {
+            users = {};
+            items.forEach(item => {
+                const contributorCount = item.contributors.length;
+                if (contributorCount > 0) {
+                    const splitAmount = item.price / contributorCount;
+                    item.contributors.forEach(user => {
+                        users[user] = (users[user] || 0) + splitAmount;
+                    });
+                }
+            });
+
+            const tbody = document.querySelector('#totalsTable tbody');
+            tbody.innerHTML = '';
+            Object.entries(users).forEach(([name, total]) => {
+                const row = tbody.insertRow();
+                row.insertCell(0).textContent = name;
+                row.insertCell(1).textContent = `$${total.toFixed(2)}`;
+            });
+        }
+    </script>
+</body>
+</html>
